@@ -1,7 +1,8 @@
 import { loadPetConfigV2 } from '@/config/pet-config.js';
 import { renderAnimatedSprite, renderFace, IDLE_SEQUENCE } from '@/sprites/index.js';
 import { RARITY_STARS, STAT_NAMES } from '@/constants.js';
-import type { Bones, Eye, ProfileData } from '@/types.js';
+import { renderStatBarsFromStats } from '@/tui/builder/stat-bars.js';
+import type { Bones, Eye, ProfileData, StatName } from '@/types.js';
 import { isStatusLineEnabled, toggleStatusLine, setStatusLineEnabled } from './toggle.ts';
 import { colorizeSprite, colorText } from './colors.ts';
 
@@ -121,12 +122,27 @@ export function runStatusLineRender(): void {
   const name = profile.name ?? bones.species;
   const face = renderFace(bones);
   const stars = RARITY_STARS[bones.rarity];
-  const shinyTag = bones.shiny ? ' shiny' : '';
-  // Format: face + name + stars + [shiny] + species (species only if name differs)
+  const shinyTag = bones.shiny ? ' ✨' : '';
   const speciesTag = profile.name ? ` ${bones.species}` : '';
   const label = colorText(`${face} ${name} ${stars}${shinyTag}${speciesTag}`, bones.rarity);
 
-  const output = [label, ...colorized];
+  // Compact stat summary: top 2 stats
+  const statEntries = STAT_NAMES.filter((s) => bones.stats[s] !== undefined)
+    .map((s) => ({ name: s, val: bones.stats[s] ?? 0 }))
+    .sort((a, b) => b.val - a.val);
+  const topStats = statEntries
+    .slice(0, 3)
+    .map((s) => `${s.name}:${s.val}`)
+    .join(' ');
+  const statLine = topStats ? colorText(`  ${topStats}`, bones.rarity) : '';
+
+  // Stat bars
+  const statBars = renderStatBarsFromStats(bones.stats as Partial<Record<StatName, number>>);
+  const coloredBars = statBars
+    ? colorizeSprite(statBars.split('\n'), bones.rarity, false, now)
+    : [];
+
+  const output = [label + statLine, ...colorized, ...coloredBars];
   process.stdout.write(output.join('\n'));
 }
 
