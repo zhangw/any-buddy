@@ -32,11 +32,19 @@ export function installStatusLine(): { composed: boolean } {
   if (existing) {
     const wrapper = `#!/usr/bin/env bash
 ${MARKER}
-# Wrapper: runs original status line + any-buddy pet sprite
+# Wrapper: runs original status line + any-buddy pet sprite (parallel)
 input=$(cat)
 
-original_output=$(echo "$input" | ${existing} 2>/dev/null)
-buddy_output=$(echo "$input" | ${OUR_COMMAND} 2>/dev/null)
+# Run both commands in parallel to stay within Claude Code's status line timeout
+_sl_tmp=$(mktemp -d)
+trap 'rm -rf "$_sl_tmp"' EXIT
+
+echo "$input" | ${existing} > "$_sl_tmp/orig" 2>/dev/null &
+echo "$input" | ${OUR_COMMAND} > "$_sl_tmp/buddy" 2>/dev/null &
+wait
+
+original_output=$(<"$_sl_tmp/orig")
+buddy_output=$(<"$_sl_tmp/buddy")
 
 if [ -n "$original_output" ] && [ -n "$buddy_output" ]; then
   printf '%s\\n%s' "$original_output" "$buddy_output"
@@ -70,7 +78,10 @@ export function uninstallStatusLine(): void {
     // Restore the original command embedded in our wrapper script
     try {
       const wrapper = readFileSync(WRAPPER_PATH, 'utf-8');
-      const match = wrapper.match(/original_output=\$\(echo "\$input" \| (.+?) 2>/);
+      // Match both sequential and parallel wrapper formats
+      const match =
+        wrapper.match(/echo "\$input" \| (.+?) > "\$_sl_tmp\/orig"/) ??
+        wrapper.match(/original_output=\$\(echo "\$input" \| (.+?) 2>/);
       if (match?.[1]) {
         settings.statusLine = { type: 'command', command: match[1] };
       } else {
