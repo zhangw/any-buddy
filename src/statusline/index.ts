@@ -106,15 +106,8 @@ export function runStatusLineRender(): void {
   const profile = loadActiveProfile();
   if (!profile) return;
 
-  // Construct Bones directly from saved profile — no need to re-hash
-  const bones: Bones = {
-    species: profile.species,
-    rarity: profile.rarity,
-    eye: profile.eye,
-    hat: profile.hat,
-    shiny: profile.shiny,
-    stats: profile.stats,
-  };
+  const { species, rarity, eye, hat, shiny, stats } = profile;
+  const bones: Bones = { species, rarity, eye, hat, shiny, stats };
 
   // Timestamp-based animation frame — Claude Code controls refresh rate,
   // so each call naturally shows the correct frame for this moment

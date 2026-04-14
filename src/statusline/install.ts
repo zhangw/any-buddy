@@ -16,24 +16,14 @@ function getStatusLineCommand(): string | undefined {
   return (getClaudeSettings().statusLine as StatusLineEntry | undefined)?.command;
 }
 
-/** Read settings, apply a statusLine change, and write back — single read-write cycle. */
-function updateStatusLine(entry: StatusLineEntry | undefined): void {
-  const settings = getClaudeSettings();
-  if (entry) {
-    settings.statusLine = entry;
-  } else {
-    delete settings.statusLine;
-  }
-  saveClaudeSettings(settings);
-}
-
 export function isStatusLineInstalled(): boolean {
   const cmd = getStatusLineCommand() ?? '';
   return cmd.includes(OUR_COMMAND) || cmd.includes(WRAPPER_PATH);
 }
 
 export function installStatusLine(): { composed: boolean } {
-  const existing = getStatusLineCommand();
+  const settings = getClaudeSettings();
+  const existing = (settings.statusLine as StatusLineEntry | undefined)?.command;
 
   if (existing?.includes(OUR_COMMAND) || existing?.includes(WRAPPER_PATH)) {
     return { composed: false };
@@ -59,31 +49,39 @@ fi
     writeFileSync(WRAPPER_PATH, wrapper);
     chmodSync(WRAPPER_PATH, 0o755);
 
-    updateStatusLine({ type: 'command', command: `bash ${WRAPPER_PATH}` });
+    settings.statusLine = { type: 'command', command: `bash ${WRAPPER_PATH}` };
+    saveClaudeSettings(settings);
     return { composed: true };
   }
 
-  updateStatusLine({ type: 'command', command: OUR_COMMAND });
+  settings.statusLine = { type: 'command', command: OUR_COMMAND };
+  saveClaudeSettings(settings);
   return { composed: false };
 }
 
 export function uninstallStatusLine(): void {
-  const cmd = getStatusLineCommand();
+  const settings = getClaudeSettings();
+  const cmd = (settings.statusLine as StatusLineEntry | undefined)?.command;
   if (!cmd) return;
 
   if (cmd === OUR_COMMAND) {
-    updateStatusLine(undefined);
-    return;
+    delete settings.statusLine;
+  } else if (cmd.includes(WRAPPER_PATH)) {
+    // Restore the original command embedded in our wrapper script
+    try {
+      const wrapper = readFileSync(WRAPPER_PATH, 'utf-8');
+      const match = wrapper.match(/original_output=\$\(echo "\$input" \| (.+?) 2>/);
+      if (match?.[1]) {
+        settings.statusLine = { type: 'command', command: match[1] };
+      } else {
+        delete settings.statusLine;
+      }
+    } catch {
+      delete settings.statusLine;
+    }
+  } else {
+    return; // Not our status line — don't touch
   }
 
-  if (!cmd.includes(WRAPPER_PATH)) return;
-
-  // Restore the original command embedded in our wrapper script
-  try {
-    const wrapper = readFileSync(WRAPPER_PATH, 'utf-8');
-    const match = wrapper.match(/original_output=\$\(echo "\$input" \| (.+?) 2>/);
-    updateStatusLine(match?.[1] ? { type: 'command', command: match[1] } : undefined);
-  } catch {
-    updateStatusLine(undefined);
-  }
+  saveClaudeSettings(settings);
 }

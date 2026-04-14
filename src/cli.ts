@@ -195,8 +195,8 @@ Usage:
   any-buddy restore                  Restore original pet
   any-buddy buddies                  Browse and switch between your buddies
   any-buddy rehatch                  Delete companion to re-hatch via /buddy
-  any-buddy plugin install            Set up buddy status line in Claude Code
-  any-buddy plugin uninstall          Remove buddy status line, restore original
+  any-buddy plugin install            Set up any-buddy status line in Claude Code
+  any-buddy plugin uninstall          Remove any-buddy status line, restore original
   any-buddy plugin status             Check if plugin is installed
 
 Options:
