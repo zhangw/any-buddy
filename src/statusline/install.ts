@@ -4,7 +4,7 @@ import { homedir } from 'os';
 import { getClaudeSettings, saveClaudeSettings } from '@/config/hooks.js';
 
 const WRAPPER_PATH = join(homedir(), '.claude', 'any-buddy-statusline-wrapper.sh');
-const OUR_COMMAND = 'any-buddy statusline';
+const OUR_COMMAND = 'npx --yes any-buddy statusline';
 const MARKER = '# any-buddy-statusline';
 
 interface StatusLineEntry {

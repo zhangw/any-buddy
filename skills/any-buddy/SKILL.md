@@ -2,12 +2,18 @@
 name: any-buddy
 description: Toggle any-buddy companion pet visibility in the Claude Code status line (on/off/toggle). Use when the user wants to show, hide, or toggle their buddy pet.
 argument-hint: '[on|off] (omit to toggle)'
-allowed-tools: Bash(any-buddy *)
+allowed-tools: Bash(npx any-buddy *), Bash(any-buddy *)
 ---
 
 Toggle the any-buddy pet display in the Claude Code status line.
 
 Run this command to toggle or explicitly set the buddy pet display:
+
+```bash
+npx any-buddy statusline toggle $ARGUMENTS --session ${CLAUDE_SESSION_ID}
+```
+
+If `npx any-buddy` fails, try with the direct command:
 
 ```bash
 any-buddy statusline toggle $ARGUMENTS --session ${CLAUDE_SESSION_ID}
