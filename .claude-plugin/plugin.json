@@ -1,0 +1,10 @@
+{
+  "name": "any-buddy",
+  "version": "2.3.0",
+  "description": "Show your any-buddy companion pet in the Claude Code status line via /any-buddy",
+  "author": {
+    "name": "cpaczek"
+  },
+  "homepage": "https://github.com/cpaczek/any-buddy",
+  "repository": "https://github.com/cpaczek/any-buddy"
+}

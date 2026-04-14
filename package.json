@@ -9,6 +9,8 @@
   "files": [
     "dist/",
     "assets/",
+    ".claude-plugin/",
+    "skills/",
     "README.md",
     "LICENSE"
   ],

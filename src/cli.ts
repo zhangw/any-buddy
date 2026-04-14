@@ -19,7 +19,9 @@ if (typeof globalThis.Bun === 'undefined' && process.env.__ANYBUDDY_NO_REEXEC !=
   const args = process.argv.slice(2);
   const isHelp = args.includes('--help') || args.includes('-h') || args[0] === 'help';
   const isSilentApply = args[0] === 'apply' && args.includes('--silent');
-  if (!isHelp && !isSilentApply) {
+  const isStatusLine = args[0] === 'statusline' && !args.includes('toggle');
+  const isPlugin = args[0] === 'plugin';
+  if (!isHelp && !isSilentApply && !isStatusLine && !isPlugin) {
     try {
       const { spawnSync } = await import('child_process');
       const { findBunBinary } = await import('./patcher/binary-finder.ts');
@@ -110,6 +112,49 @@ try {
     case 'share':
       await runShare();
       break;
+    case 'plugin': {
+      const sub = process.argv[3];
+      const { installStatusLine, uninstallStatusLine, isStatusLineInstalled } =
+        await import('./statusline/install.ts');
+      if (sub === 'install') {
+        if (isStatusLineInstalled()) {
+          console.log('any-buddy plugin already installed.');
+        } else {
+          const result = installStatusLine();
+          console.log('any-buddy plugin installed.');
+          if (result.composed) {
+            console.log('  Composed with your existing status line command.');
+          }
+          console.log('  Restart Claude Code, then type /any-buddy to toggle your pet.');
+        }
+      } else if (sub === 'uninstall') {
+        if (!isStatusLineInstalled()) {
+          console.log('any-buddy plugin is not installed.');
+        } else {
+          uninstallStatusLine();
+          console.log('any-buddy plugin uninstalled. Original status line restored.');
+        }
+      } else if (sub === 'status') {
+        console.log(`any-buddy plugin: ${isStatusLineInstalled() ? 'installed' : 'not installed'}`);
+      } else {
+        console.log('Usage:');
+        console.log('  any-buddy plugin install     Set up status line in Claude Code');
+        console.log('  any-buddy plugin uninstall   Remove status line, restore original');
+        console.log('  any-buddy plugin status      Check if plugin is installed');
+      }
+      break;
+    }
+    case 'statusline': {
+      const sub = process.argv[3];
+      if (sub === 'toggle') {
+        const { runStatusLineToggle } = await import('./statusline/index.ts');
+        runStatusLineToggle(process.argv.slice(4));
+      } else {
+        const { runStatusLineRender } = await import('./statusline/index.ts');
+        runStatusLineRender();
+      }
+      break;
+    }
     case 'help':
       printHelp();
       break;
@@ -150,6 +195,9 @@ Usage:
   any-buddy restore                  Restore original pet
   any-buddy buddies                  Browse and switch between your buddies
   any-buddy rehatch                  Delete companion to re-hatch via /buddy
+  any-buddy plugin install            Set up buddy status line in Claude Code
+  any-buddy plugin uninstall          Remove buddy status line, restore original
+  any-buddy plugin status             Check if plugin is installed
 
 Options:
   --all                  (preview only) Dump all preset builds with sprites to stdout
